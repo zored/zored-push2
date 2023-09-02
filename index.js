@@ -12,9 +12,26 @@ const ctx = canvas.getContext('2d')
 function drawFrame(frameNum) {
   ctx.fillStyle = "#000"
   ctx.fillRect(0, 0, push2.width, push2.height)
+  // draw 8 white column rects full push2.width:
+  ctx.fillStyle = "#111"
+  for (let i = 0; i < 8; i++) {
+    if (i % 2 === 0) {
+      continue
+    }
+    ctx.fillRect(i*push2.width/8, 0, push2.width/8, push2.height)
+  }
+
+  // draw 4 white row rects full push2.height:
+  ctx.fillStyle = "rgba(255,255,255, 0.3)"
+  for (let i = 0; i < 4; i++) {
+    if (i % 2 === 0) {
+      continue
+    }
+    ctx.fillRect(0, i*push2.height/4, push2.width, push2.height/4)
+  }
   ctx.font = '800 20px "SF Pro Display"';
   ctx.fillStyle = "hsl(" + frameNum % 360 +",100%,50%)"
-  ctx.fillText("Привет, Женечка!", frameNum, Math.sin(frameNum/50)*push2.height*0.4+push2.height/2);
+  ctx.fillText("Привет, Женечка!", (frameNum-100)%push2.width, Math.sin(frameNum/50)*push2.height*0.4+push2.height/2);
 }
 
 let frameNum = 0
