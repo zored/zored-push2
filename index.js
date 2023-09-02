@@ -1,6 +1,45 @@
 const {createCanvas} = require('canvas')
 const path = require('path')
 const { initPush, sendFrame } = require('ableton-push-canvas-display')
+const ableton = require('ableton-push2');
+
+const device = new ableton.Push2(port='user');
+//device.monitor();
+
+let fontMultiplier = 1;
+let speedMultiplier = 1;
+let waveSize = 1;
+
+device.midi.on('message', (v) => {
+  if (v._type === 'activesense') {
+    return;
+  }
+  if (v.channel === 0 && v._type === 'cc') {
+    if (v.controller === 71) {
+      if (v.value === 1) {
+        fontMultiplier += 0.01
+      } else if (v.value === 127) {
+        fontMultiplier -= 0.01
+      }
+    }
+    if (v.controller === 72) {
+      if (v.value === 1) {
+        speedMultiplier += 0.01
+      } else if (v.value === 127) {
+        speedMultiplier -= 0.01
+      }
+    }
+    if (v.controller === 73) {
+      if (v.value === 1) {
+        waveSize += 0.01
+      } else if (v.value === 127) {
+        waveSize -= 0.01
+      }
+    }
+  }
+  console.log(v)
+});
+
 
 const push2 = {
   width: 960,
@@ -29,9 +68,9 @@ function drawFrame(frameNum) {
     }
     ctx.fillRect(0, i*push2.height/4, push2.width, push2.height/4)
   }
-  ctx.font = '800 20px "SF Pro Display"';
+  ctx.font = '800 ' + (20*fontMultiplier) + 'px "SF Pro Display"';
   ctx.fillStyle = "hsl(" + frameNum % 360 +",100%,50%)"
-  ctx.fillText("Привет, Женечка!", (frameNum-100)%push2.width, Math.sin(frameNum/50)*push2.height*0.4+push2.height/2);
+  ctx.fillText("Привет, Женечка!", (frameNum*speedMultiplier-100)%push2.width, Math.sin(frameNum/50)*push2.height*waveSize*0.4+push2.height/2);
 }
 
 let frameNum = 0
