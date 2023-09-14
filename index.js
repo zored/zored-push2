@@ -2,6 +2,7 @@ const {createCanvas} = require('canvas')
 const path = require('path')
 const { initPush, sendFrame } = require('ableton-push-canvas-display')
 const ableton = require('ableton-push2');
+const robot = require('robotjs');
 
 const device = new ableton.Push2(port='user');
 //device.monitor();
@@ -10,9 +11,28 @@ let fontMultiplier = 1;
 let speedMultiplier = 1;
 let waveSize = 1;
 
+
+device.setColor([1,8], 127);
+
+
 device.midi.on('message', (v) => {
   if (v._type === 'activesense') {
     return;
+  }
+  // { channel: 0, note: 36, velocity: 0, _type: 'noteoff' }
+  if (v.channel === 0 && v._type === 'noteon') {
+    if (v.note === 36) {
+      const smiles = ['😊', '😄', '😆', '😂', '🤣'];
+      const maxVelocity = 60;
+      const smile = smiles[Math.floor(v.velocity * (smiles.length - 1) / maxVelocity)];
+      robot.typeString(smile)
+    }
+  }
+  // { channel: 0, value: 16320, _type: 'pitch' }
+  if (v.channel === 0 && v._type === 'pitch') {
+    const color = Math.round(v.value * 127 / 16320);
+    device.setColor([1,8], color);
+    console.log({color})
   }
   if (v.channel === 0 && v._type === 'cc') {
     if (v.controller === 71) {
