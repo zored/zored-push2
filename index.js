@@ -2,16 +2,18 @@ import {Display} from './src/display.js';
 import {InputTree} from './src/inputs.js';
 import {Device} from './src/device.js';
 import {Config} from './src/config.js';
-import {ColorsFlow} from './src/flow/colors.js';
+import {Flows} from './src/flows.js';
 
 ((async function () {
-  const config = new Config();
-
-  const display = new Display();
-  const inputs = new InputTree(config);
-  const device = new Device();
-
-  display.start();
-  await device.start();
-  device.listen(v => inputs.listen(v));
+  const device = await startDevice();
+  new Flows(device).start();
 })()).then();
+
+async function startDevice() {
+  const device = new Device(
+    new InputTree(new Config()),
+    new Display(),
+  );
+  await device.start();
+  return device;
+}

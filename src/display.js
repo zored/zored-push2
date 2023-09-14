@@ -3,6 +3,17 @@ import {initPush, sendFrame} from 'ableton-push-canvas-display';
 
 import {createCanvas} from 'canvas';
 
+export class Drawable {
+  constructor(x, y, width, height) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.priority = 0;
+  }
+  draw(ctx, display) {
+  }
+}
 
 export class Display {
   constructor() {
@@ -12,8 +23,29 @@ export class Display {
     this.ctx = null;
     this.colors = {
       bg: '#000',
-      bgOpaque: 'rgba(255,255,255, 0.3)',
+      bgOpaque: 'rgba(255,255,255,0.1)',
+      secondary: '#880',
+      primary: '#ff3',
     }
+    this.end = false;
+    this.drawables = [];
+  }
+
+  close() {
+    this.end = true;
+  }
+
+  clear() {
+    this.drawables = [];
+  }
+
+  addDrawable(drawable) {
+    this.drawables.push(drawable);
+    this.drawables.sort((a, b) => a.priority - b.priority);
+  }
+
+  removeDrawable(drawable) {
+    this.drawables = this.drawables.filter(v => v !== drawable);
   }
 
   draw() {
@@ -21,7 +53,14 @@ export class Display {
     const width = this.width;
     const height = this.height;
     const colors = this.colors;
-
+    if (this.end) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+      return;
+    }
+    // if (!this.drawables.some(v => v.touched)) {
+    //   return;
+    // }
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
     ctx.fillStyle = colors.bgOpaque;
@@ -35,6 +74,7 @@ export class Display {
         ctx.fillRect(0, i * height / 4, width, height / 4);
       }
     }
+    this.drawables.forEach(v => v.draw(ctx, this));
   }
 
   drawLoop() {

@@ -1,15 +1,57 @@
 import ableton from 'ableton-push2';
+import {Button} from './inputs.js';
 
 export class Device {
-  async start() {
-    this.push2 = new ableton.Push2('user');
-    await Promise.all([
-      this.push2.setTouchStripConfiguration(),
-      this.push2.setDisplayBrightness(255)
-    ])
-    this.push2.setAftertouchMode('poly');
+  constructor(inputs, display) {
+    this.inputs = inputs;
+    this.display = display;
+    this.push2 = null;
   }
+
+  async start() {
+    this.display.start();
+    await this.configure();
+    this.listen(v => this.inputs.listen(v));
+    // this.onExit();
+  }
+
+  async configure() {
+    const p = new ableton.Push2('user');
+    await Promise.all([
+      p.setTouchStripConfiguration(),
+      p.setDisplayBrightness(255),
+    ]);
+    p.setAftertouchMode('poly');
+    this.push2 = p;
+  }
+
   listen(f) {
     this.push2.midi.on('message', f);
+  }
+
+  drawInputs() {
+    Object.values(this.inputs.index).filter(v => v.touched).map(v => {
+      if (v instanceof Button) {
+        this.push2.setColor(v.key(), v.color);
+      }
+    });
+  }
+
+  onExit() {
+    ['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM'].forEach((v) => {
+      process.on(v, () => this.close());
+    });
+  }
+
+  reset() {
+    this.display.clear();
+    this.inputs.clear();
+    this.drawInputs();
+  }
+
+  close() {
+    this.display.close();
+    this.reset();
+    this.push2.close();
   }
 }
