@@ -32,7 +32,10 @@ export class Device {
   drawInputs() {
     Object.values(this.inputs.index).filter(v => v.touched).map(v => {
       if (v instanceof Button) {
-        this.push2.setColor(v.key(), v.color);
+        const key = v.key();
+        console.log({key, color: v.color})
+        this.push2.setColor(key, v.color);
+        v.touched = false;
       }
     });
   }

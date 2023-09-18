@@ -5,20 +5,23 @@ class Names {
     this.names = keys ? ableton.Keymap.keys : ableton.Keymap.controls;
     this.ids = Object.fromEntries(Object.entries(this.names).map(([k, v]) => [v, k]));
   }
+
   nameById(v) {
     return this.names[v];
   }
+
   idByName(v) {
     return this.ids[v];
   }
 }
 
 const keysNames = new Names(true);
-const controlsNames = new Names(true);
+const controlsNames = new Names(false);
 
 export const inputTypes = {
   knob: 'cc',
   note: 'note',
+  button: 'cc',
   healthcheck: 'activesense',
 };
 
@@ -62,12 +65,7 @@ export class Button extends Input {
   constructor(v) {
     super(v);
     this.touched = false;
-  }
-
-  trigger(v) {
-    v.up = v.parent._type === events.noteUp;
-    v.velocity = v.parent.velocity;
-    super.trigger(v);
+    this.color = 0;
   }
 
   setColor(v) {
@@ -76,14 +74,34 @@ export class Button extends Input {
   }
 }
 
+export class RegularButton extends Button {
+  constructor(v) {
+    super(v);
+    this.controller = v.controller;
+  }
+  trigger(v) {
+    v.up = v.parent.value === 0;
+    super.trigger(v);
+  }
+  toggleLight(v) {
+    this.setColor(v ? 127 : 0);
+  }
+}
+
 export class Pad extends Button {
   constructor(v) {
-    super(v)
-    const m = v.name.match(/(\d),(\d)/)
+    super(v);
+    const m = v.name.match(/(\d),(\d)/);
     if (m) {
       this.y = parseInt(m[1]);
       this.x = parseInt(m[2]);
     }
+  }
+
+  trigger(v) {
+    v.up = v.parent._type === events.noteUp;
+    v.velocity = v.parent.velocity;
+    super.trigger(v);
   }
 }
 
@@ -129,8 +147,19 @@ export class InputTree {
       _type: inputTypes.note,
       name: keysNames.nameById(note),
     })));
-    this.index = Object.fromEntries(this.indexInputs());
 
+    a.buttons.bottom = seq([[20, 27]]).map((controller, i) => (new RegularButton({
+      controller,
+      _type: inputTypes.button,
+      name: controlsNames.nameById(controller),
+    })));
+    a.buttons.top = seq([[102, 109]]).map((controller, i) => (new RegularButton({
+      controller,
+      _type: inputTypes.button,
+      name: controlsNames.nameById(controller),
+    })));
+
+    this.index = Object.fromEntries(this.indexInputs());
     if (this.config.isDebug()) {
       console.log(JSON.stringify(this, null, 2));
     }
@@ -148,7 +177,9 @@ export class InputTree {
       return;
     }
     const data = {parent: v};
-    this.findInput(v)?.trigger?.(data);
+    const foundInput = this.findInput(v);
+    console.log({foundInput, v})
+    foundInput?.trigger?.(data);
     if (this.config.isDebug()) {
       console.log({data});
     }
@@ -162,7 +193,7 @@ export class InputTree {
     Object.values(this.index).forEach(v => {
       v.listeners = [];
       if (v instanceof Button) {
-        v.setColor(0)
+        v.setColor(0);
       }
     });
   }

@@ -5,8 +5,14 @@ import {Config} from './src/config.js';
 import {Flows} from './src/flows.js';
 
 ((async function () {
-  const device = await startDevice();
-  new Flows(device).start();
+  try {
+
+    const device = await startDevice();
+    await new Flows(device).start();
+  } catch (e) {
+    console.log({e});
+    process.exit(1);
+  }
 })()).then();
 
 async function startDevice() {

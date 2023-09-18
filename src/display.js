@@ -10,6 +10,7 @@ export class Drawable {
     this.width = width;
     this.height = height;
     this.priority = 0;
+    this.touched = true;
   }
   draw(ctx, display) {
   }
@@ -58,22 +59,26 @@ export class Display {
       ctx.fillRect(0, 0, width, height);
       return;
     }
-    // if (!this.drawables.some(v => v.touched)) {
-    //   return;
-    // }
+
+    const timestamp = new Date().getTime();
+    this.timestampDelta = timestamp - (this.timestamp || timestamp);
+    this.timestamp = timestamp;
+    if (!this.drawables.some(v => v.touched)) {
+      return;
+    }
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, width, height);
     ctx.fillStyle = colors.bgOpaque;
-    for (let i = 0; i < 8; i++) {
-      if (i % 2 !== 0) {
-        ctx.fillRect(i * width / 8, 0, width / 8, height);
-      }
-    }
-    for (let i = 0; i < 4; i++) {
-      if (i % 2 !== 0) {
-        ctx.fillRect(0, i * height / 4, width, height / 4);
-      }
-    }
+    // for (let i = 0; i < 8; i++) {
+    //   if (i % 2 !== 0) {
+    //     ctx.fillRect(i * width / 8, 0, width / 8, height);
+    //   }
+    // }
+    // for (let i = 0; i < 4; i++) {
+    //   if (i % 2 !== 0) {
+    //     ctx.fillRect(0, i * height / 4, width, height / 4);
+    //   }
+    // }
     this.drawables.forEach(v => v.draw(ctx, this));
   }
 
