@@ -5,9 +5,9 @@ export class Flows {
   constructor(device) {
     this.device = device;
     this.flows = [
-      new IntegratorFlow(device),
       new ColorsFlow(device, 0),
       new ColorsFlow(device, 64),
+      new IntegratorFlow(device),
       new CalcFlow(device),
     ];
     this.index = 0;
@@ -65,6 +65,9 @@ class ColorsFlow {
     d.addDrawable(cube);
     this.device.inputs.a.knobs[1].listen(({up}) => {
       cube.speed += (up ? 1 : -1) * 0.1;
+    });
+    this.device.inputs.a.knobs[2].listen(({up}) => {
+      cube.hue += up ? 1 : -1;
     });
   }
 }

@@ -6,13 +6,14 @@ export class CubeOutput extends Drawable {
     super(x, y, width, height);
     this.angle = 0;
     this.speed = 1;
+    this.hue = 0;
     this.slowDown()
   }
 
   slowDown() {
     setInterval(() => {
-      this.speed *= 0.7;
-    }, 1000)
+      this.speed *= 0.99;
+    }, 100)
   }
   draw(ctx, display) {
     this.draw3DCube(ctx, display);
@@ -60,7 +61,7 @@ export class CubeOutput extends Drawable {
         y * this.height / 2 + this.height / 2,
       ];
     });
-    ctx.strokeStyle = display.colors.secondary;
+    ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;
     ctx.strokeWidth = 5;
 
     // translate this.x and this.y:
