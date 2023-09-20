@@ -13,8 +13,9 @@ export class IntegratorFlow {
     const displayButtons = new DisplayButtons();
     this.device.display.addDrawable(displayButtons);
     const example = displayButtons.addButton('example');
-    setTimeout(() => example.disabled = true, 1000);
-    displayButtons.listen(this.device);
+    displayButtons.listen(this.device, (button, v) => {
+      return new Promise((resolve, reject) => setTimeout(resolve, 1000))
+    });
 
     const r = await (await fetch('http://localhost/data', {method: 'POST'})).json();
     const purposes = ['integrator', 'service', 'tool', 'lib'];
@@ -40,17 +41,32 @@ export class DisplayButtons extends Drawable {
     return o;
   }
 
-  listen(device) {
+  listen(device, f) {
     [
       ...device.inputs.a.buttons.top,
       ...device.inputs.a.buttons.bottom,
     ].forEach(v => {
-      v.listen(({up}) => {
-        if (up) {
-          console.log(`BUTTON CLICKED!`);
-          v.toggleLight(!v.color);
-          device.drawInputs();
+      v.listen(async ({up}) => {
+        if (!up) {
+          return;
         }
+        const index = v.displayButtonIndex();
+        console.log({index})
+        const button = this.buttons[index];
+        if (button.disabled) {
+          return;
+        }
+        button.disabled = true;
+        v.setColor(96);
+        device.drawInputs();
+        try {
+          await f(button, v);
+        } catch(e) {
+          console.error({e, msg: 'error in button listener'})
+        }
+        button.disabled = false;
+        v.setColor(11);
+        device.drawInputs();
       });
     });
     device.drawInputs();
@@ -68,7 +84,7 @@ export class DisplayButtons extends Drawable {
         if (!button) {
           continue;
         }
-        ctx.fillStyle = display.colors[button.disabled ? 'secondary' : 'primary'];
+        ctx.fillStyle = display.colors[button.disabled ? 'disabled' : 'primary'];
         ctx.textBaseline = top ? 'top' : 'bottom';
         ctx.textAlign = 'center';
         ctx.font = '18px Arial';

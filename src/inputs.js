@@ -88,8 +88,14 @@ export class RegularButton extends Button {
     v.up = v.parent.value === 0;
     super.trigger(v);
   }
-  toggleLight(v) {
-    this.setColor(v ? 127 : 0);
+  displayButtonIndex() {
+    // lower display button 8
+    const m = this.v.name.match(/(lower|upper) display button (\d)/);
+    if (!m) {
+      return
+    }
+    const [_, row, index] = m;
+    return row === 'upper' ? 0 : 8 + (parseInt(index)-1);
   }
 }
 

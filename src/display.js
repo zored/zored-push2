@@ -27,6 +27,7 @@ export class Display {
       bgOpaque: 'rgba(255,255,255,0.1)',
       secondary: '#880',
       primary: '#ff3',
+      disabled: '#444',
     }
     this.end = false;
     this.drawables = [];
