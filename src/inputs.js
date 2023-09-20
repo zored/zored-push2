@@ -84,18 +84,20 @@ export class RegularButton extends Button {
     super(v);
     this.controller = v.controller;
   }
+
   trigger(v) {
     v.up = v.parent.value === 0;
     super.trigger(v);
   }
+
   displayButtonIndex() {
     // lower display button 8
     const m = this.v.name.match(/(lower|upper) display button (\d)/);
     if (!m) {
-      return
+      return;
     }
     const [_, row, index] = m;
-    return row === 'upper' ? 0 : 8 + (parseInt(index)-1);
+    return row === 'upper' ? 0 : 8 + (parseInt(index) - 1);
   }
 }
 
@@ -119,6 +121,15 @@ export class Pad extends Button {
 export class InputTree {
   constructor(config) {
     this.config = config;
+    this.colors = {
+      turquoise: 14,
+      orange: 8,
+      red: 2,
+      green: 11,
+      sepia: 6,
+      blue: 19,
+
+    };
     this.a = {
       knobs: [],
       pads: [],

@@ -1,4 +1,4 @@
-import {DigitsOutput, CubeOutput} from './outputs.js';
+import {CubeOutput, DigitsOutput} from './outputs.js';
 import {IntegratorFlow} from './flows/integrator_flow.js';
 
 export class Flows {
@@ -30,9 +30,8 @@ export class Flows {
     this.device.reset();
     this.listenKnob();
     const r = this.flows[this.index].start();
-    if (r instanceof Promise) {
-      await r
-    }
+    this.flows.forEach((v, i) => v.stopped = i !== this.index);
+    await r;
   }
 }
 
@@ -47,7 +46,7 @@ class ColorsFlow {
       v.setColor((v.x - 1) * 8 + v.y + this.offset);
       v.listen(({up}) => {
         if (up) {
-          ['bottom', 'top'].forEach(row => this.device.inputs.a.buttons[row][v.y-1].setColor(v.color));
+          ['bottom', 'top'].forEach(row => this.device.inputs.a.buttons[row][v.y - 1].setColor(v.color));
           this.device.drawInputs();
           console.log(v.color);
         }
@@ -66,7 +65,7 @@ class ColorsFlow {
     d.addDrawable(cube);
     this.device.inputs.a.knobs[1].listen(({up}) => {
       cube.speed += (up ? 1 : -1) * 0.1;
-    })
+    });
   }
 }
 
@@ -77,9 +76,10 @@ class CalcFlow {
 
   start() {
     const digitsOutput = new DigitsOutput(this.device.display);
-    const pressedColor = 14;
-    const digitColor = 8;
-    const deleteColor = 78;
+
+    const pressedColor = this.device.inputs.colors.turquoise;
+    const digitColor = this.device.inputs.colors.orange;
+    const deleteColor = this.device.inputs.colors.red;
 
     this.device.inputs.a.pads.forEach(v => {
       const offset = 2;

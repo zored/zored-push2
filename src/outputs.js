@@ -87,6 +87,20 @@ export class CubeOutput extends Drawable {
     ctx.stroke();
 
     ctx.restore();
+
+    const w = display.height;
+    ctx.drawImage(display.canvas,
+      this.x, 0,
+      w, w,
+      0, 0,
+      w, w,
+    );
+    ctx.drawImage(display.canvas,
+      this.x, 0,
+      w, w,
+      display.width-w, 0,
+      w, w,
+    );
   }
 }
 
