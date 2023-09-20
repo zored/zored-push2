@@ -28,6 +28,7 @@ export class IntegratorFlow {
       const buttonColor = this.priorityPurposeColors[repo.Repo.Purpose];
       const clickedColor = this.device.inputs.colors.blue;
       v.setColor(buttonColor);
+      v.setAnimation('pulsingHalf');
       v.listen(({up}) => {
         if (up) {
           v.setColor(buttonColor);

@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "ableton-push-canvas-display": "^1.0.1",
-    "ableton-push2": "zored/node-ableton-push2#fixes",
+    "ableton-push2": "zored/node-ableton-push2#7b7eb5dadfef45f6254488b1704fcafbaf6d6b50",
     "canvas": "^2.11.2",
     "robotjs": "^0.6.0",
     "usb": "^2.10.0"

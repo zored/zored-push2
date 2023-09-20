@@ -33,7 +33,7 @@ export class Device {
     Object.values(this.inputs.index).filter(v => v.touched).map(v => {
       if (v instanceof Button) {
         const key = v.key().replace(/^(key|control)_/, '');
-        this.push2.setColor(key, v.color);
+        this.push2.setColor(key, v.color, v.animation || 0);
         v.touched = false;
       }
     });

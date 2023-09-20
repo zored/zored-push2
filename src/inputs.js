@@ -71,10 +71,16 @@ export class Button extends Input {
     super(v);
     this.touched = false;
     this.color = 0;
+    this.animation = 0;
   }
 
   setColor(v) {
     this.color = v;
+    this.touched = true;
+  }
+
+  setAnimation(v) {
+    this.animation = v;
     this.touched = true;
   }
 }
