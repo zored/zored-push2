@@ -47,6 +47,8 @@ class ColorsFlow {
       v.setColor((v.x - 1) * 8 + v.y + this.offset);
       v.listen(({up}) => {
         if (up) {
+          ['bottom', 'top'].forEach(row => this.device.inputs.a.buttons[row][v.y-1].setColor(v.color));
+          this.device.drawInputs();
           console.log(v.color);
         }
       });

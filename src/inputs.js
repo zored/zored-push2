@@ -3,15 +3,20 @@ import ableton from 'ableton-push2';
 class Names {
   constructor(keys) {
     this.names = keys ? ableton.Keymap.keys : ableton.Keymap.controls;
-    this.ids = Object.fromEntries(Object.entries(this.names).map(([k, v]) => [v, k]));
+    this.prefix = keys ? 'key' : 'control';
+    this.ids = Object.fromEntries(Object.entries(this.names).map(([k, v]) => [this.addPrefix(v), k]));
   }
 
   nameById(v) {
-    return this.names[v];
+    return this.addPrefix(this.names[v]);
   }
 
   idByName(v) {
     return this.ids[v];
+  }
+
+  addPrefix(v) {
+    return this.prefix + '_' + v;
   }
 }
 
@@ -178,7 +183,6 @@ export class InputTree {
     }
     const data = {parent: v};
     const foundInput = this.findInput(v);
-    console.log({foundInput, v})
     foundInput?.trigger?.(data);
     if (this.config.isDebug()) {
       console.log({data});
