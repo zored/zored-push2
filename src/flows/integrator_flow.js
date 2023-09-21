@@ -1,41 +1,65 @@
 import {Drawable} from '../display.js';
+import fs from 'fs';
+
 
 export class IntegratorFlow {
   constructor(device) {
     this.device = device;
     this.data = null;
-    const c = device.inputs.colors;
     this.priorityPurposeColors = {
-      integrator: c.turquoise,
-      service: c.green,
-      tool: c.sepia,
-      lib: c.orange,
+      integrator: 'turquoise',
+      service: 'green',
+      tool: 'peach',
+      lib: 'orange',
     };
+    this.selected = {};
   }
 
   async start() {
     const buttons = await this.createButtons();
     const loading = buttons.addButton('loading...');
     loading.disabled = true;
-    await this.loadData();
+    if (!this.data) {
+      await this.loadData();
+    }
     if (this.stopped) {
       return;
     }
+    loading.text = '';
 
     const d = this.data;
     this.device.inputs.a.pads.forEach((v, i) => {
       const repo = this.data.Repos[i];
-      const buttonColor = this.priorityPurposeColors[repo.Repo.Purpose];
+      const repoName = repo.Repo.Name;
+      const buttonColorName = this.priorityPurposeColors[repo.Repo.Purpose];
       const clickedColor = this.device.inputs.colors.blue;
+      const active = repo.Git.Reference === this.data.Branch || repo.Repo.Name === 'integrator';
+      const buttonColor = this.device.inputs.colors[buttonColorName + (active ? '' : 'Dark')];
       v.setColor(buttonColor);
-      v.setAnimation('pulsingHalf');
       v.listen(({up}) => {
         if (up) {
+          if (this.selected[repoName]) {
+            delete this.selected[repoName];
+            v.setAnimation('stopTransition');
+          } else {
+            this.selected[repoName] = true;
+            v.setAnimation('pulsingHalf');
+          }
           v.setColor(buttonColor);
-          console.log({
-            v,
-            msg: repo.Repo.Name,
-          });
+
+          buttons.reset();
+          const fixes = Object.keys(this.selected).map(v => this.data.Fixes[v]);
+          if (fixes.length) {
+            fixes.reduce((a, b) => (a || []).filter(c => (b || []).includes(c || [])))
+              ?.slice(0, 16)
+              ?.forEach((v, i) => buttons.addButton(v, async (button, v, index) => {
+                console.log({
+                  button,
+                  v,
+                  index
+                })
+              }, i > 8 ? 1 : 0, i % 8))
+          }
         } else {
           v.setColor(clickedColor);
         }
@@ -52,15 +76,23 @@ export class IntegratorFlow {
   }
 
   async loadData() {
+    const f = 'debug_integrator_data.json';
+    if (fs.existsSync(f)) {
+      this.data = JSON.parse(fs.readFileSync(f, 'utf8'));
+      return;
+    }
+
     const r = await (await fetch('http://localhost/data', {method: 'POST'})).json();
     const purposes = Object.keys(this.priorityPurposeColors);
     r.Repos.sort((a, b) => {
       const purpose = v => purposes.indexOf(v.Repo.Purpose);
       const name = v => v.Repo.Name;
-
-      return purpose(a) === purpose(b)
-        ? name(a) > name(b) ? 1 : -1
-        : purpose(a) > purpose(b) ? 1 : -1;
+      const byIntegrator = v => name(v) === 'integrator' ? -1 : 0;
+      const bySwagger = v => name(v) === 'swagger' ? -1 : 0;
+      return byIntegrator(a) - byIntegrator(b) ||
+        bySwagger(a) - bySwagger(b) ||
+        purpose(a) - purpose(b) ||
+        name(a) - name(b);
     });
     this.data = r;
   }
@@ -71,6 +103,10 @@ export class DisplayButtons extends Drawable {
     super(0, 0, 0, 0);
     this.buttons = [];
     this.device = device;
+  }
+
+  reset() {
+    this.buttons = [];
   }
 
   addButton(text, up = async (button, v, index) => {

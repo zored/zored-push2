@@ -5,9 +5,9 @@ export class Flows {
   constructor(device) {
     this.device = device;
     this.flows = [
+      new IntegratorFlow(device),
       new ColorsFlow(device, 0),
       new ColorsFlow(device, 64),
-      new IntegratorFlow(device),
       new CalcFlow(device),
     ];
     this.index = 0;

@@ -17,6 +17,7 @@ export class Device {
 
   async configure() {
     const p = new ableton.Push2('user');
+
     await Promise.all([
       p.setTouchStripConfiguration(),
       p.setDisplayBrightness(255),

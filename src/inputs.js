@@ -97,13 +97,13 @@ export class RegularButton extends Button {
   }
 
   displayButtonIndex() {
-    // lower display button 8
     const m = this.v.name.match(/(lower|upper) display button (\d)/);
+    console.log({m})
     if (!m) {
-      return;
+      return -1;
     }
     const [_, row, index] = m;
-    return row === 'upper' ? 0 : 8 + (parseInt(index) - 1);
+    return (row === 'upper' ? 0 : 8) + (parseInt(index) - 1);
   }
 }
 
@@ -129,12 +129,16 @@ export class InputTree {
     this.config = config;
     this.colors = {
       turquoise: 14,
+      turquoiseDark: 96,
       orange: 8,
+      orangeDark: 80,
       red: 2,
       green: 11,
+      greenDark: 84,
       sepia: 6,
       blue: 19,
-
+      peach: 5,
+      peachDark: 78,
     };
     this.a = {
       knobs: [],
