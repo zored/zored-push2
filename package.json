@@ -12,8 +12,10 @@
   "license": "ISC",
   "dependencies": {
     "ableton-push-canvas-display": "^1.0.1",
-    "ableton-push2": "zored/node-ableton-push2#7b7eb5dadfef45f6254488b1704fcafbaf6d6b50",
+    "ableton-push2": "zored/node-ableton-push2#dd80ad7cb16305a26821266078c98ea7422b818e",
     "canvas": "^2.11.2",
+    "node-html-to-image": "^4.0.0",
+    "puppeteer-cluster": "^0.23.0",
     "robotjs": "^0.6.0",
     "usb": "^2.10.0"
   }

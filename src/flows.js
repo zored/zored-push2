@@ -1,11 +1,13 @@
 import {CubeOutput, DigitsOutput} from './outputs.js';
 import {IntegratorFlow} from './flows/integrator_flow.js';
+import {HTMLFlow} from './flows/html_flow.js';
 
 export class Flows {
   constructor(device) {
     this.device = device;
     this.flows = [
       new IntegratorFlow(device),
+      new HTMLFlow(device),
       new ColorsFlow(device, 0),
       new ColorsFlow(device, 64),
       new CalcFlow(device),

@@ -32,9 +32,10 @@ export class IntegratorFlow {
       const repo = this.data.Repos[i];
       const repoName = repo.Repo.Name;
       const buttonColorName = this.priorityPurposeColors[repo.Repo.Purpose];
-      const clickedColor = this.device.inputs.colors.blue;
+      const colors = this.device.inputs.colors;
+      const clickedColor = colors.blue;
       const active = repo.Git.Reference === this.data.Branch || repo.Repo.Name === 'integrator';
-      const buttonColor = this.device.inputs.colors[buttonColorName + (active ? '' : 'Dark')];
+      const buttonColor = colors[buttonColorName + (active ? '' : 'Dark')];
       v.setColor(buttonColor);
       v.listen(({up}) => {
         if (up) {
