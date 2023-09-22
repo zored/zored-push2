@@ -1,124 +1,41 @@
-import {CubeOutput, DigitsOutput} from './outputs.js';
-import {IntegratorFlow} from './flows/integrator_flow.js';
-import {HTMLFlow} from './flows/html_flow.js';
+import {Integrator} from './flows/integrator.js';
+import {Colors} from './flows/colors.js';
+import {Simple} from './flows/simple.js';
 
 export class Flows {
   constructor(device) {
     this.device = device;
-    this.flows = [
-      new ColorsFlow(device, 0),
-      new ColorsFlow(device, 64),
-      new IntegratorFlow(device),
-      new CalcFlow(device),
-      new HTMLFlow(device),
-    ];
     this.index = 0;
+    this.flows = this.initFlows();
+  }
+
+  initFlows() {
+    const d = this.device;
+    return [
+      new Simple(d),
+      new Colors(d, 0),
+      new Colors(d, 64),
+      new Integrator(d),
+    ];
   }
 
   async start() {
-    await this.update();
-  }
-
-  listenKnob() {
-    this.device.inputs.a.knobs[0].listen(({up}) => {
-      const before = this.index;
-      this.index += up ? 1 : -1;
-      this.index = this.index < 0 ? this.flows.length - 1 : (this.index >= this.flows.length ? 0 : this.index);
-      this.update();
-    });
-  }
-
-  async update() {
     this.device.reset();
-    this.listenKnob();
-    this.flows.forEach((v, i) => v.stopped = i !== this.index);
-    const r = this.flows[this.index].start();
-    await r;
-  }
-}
-
-class ColorsFlow {
-  constructor(device, offset = 0) {
-    this.device = device;
-    this.offset = offset;
+    this.switchOnKnob();
+    await Promise.all(this.flows.map(async (v, i) => await (i === this.index
+        ? v.start()
+        : v.stop()
+    )));
   }
 
-  start() {
-    this.device.inputs.a.pads.forEach(v => {
-      v.setColor((v.x - 1) * 8 + v.y + this.offset);
-      v.listen(({up}) => {
-        if (up) {
-          ['bottom', 'top'].forEach(row => this.device.inputs.a.buttons[row][v.y - 1].setColor(v.color));
-          console.log(v.color);
-        }
-      });
-    });
-
-    const size = 100;
-    const d = this.device.display;
-    const cube = new CubeOutput(
-      d.width / 2 - size / 2,
-      d.height / 2 - size / 2,
-      size,
-      size,
-    );
-    d.addDrawable(cube);
-    this.device.inputs.a.knobs[2].listen(({up}) => {
-      cube.hue += up ? 1 : -1;
-    });
-    this.device.inputs.a.knobs[3].listen(({up}) => {
-      cube.speedX += (up ? 1 : -1) * 0.1;
-    });
-    this.device.inputs.a.knobs[4].listen(({up}) => {
-      cube.speedY += (up ? 1 : -1) * 0.1;
-    });
-    this.device.inputs.a.knobs[5].listen(({up}) => {
-      cube.speedZ += (up ? 1 : -1) * 0.1;
+  switchOnKnob() {
+    this.device.inputs.a.knobs[0].listen(async ({up}) => {
+      this.index += up ? 1 : -1;
+      this.index = this.index < 0
+        ? this.flows.length - 1
+        : (this.index >= this.flows.length ? 0 : this.index);
+      await this.start();
     });
   }
-}
 
-class CalcFlow {
-  constructor(device) {
-    this.device = device;
-  }
-
-  start() {
-    const digitsOutput = new DigitsOutput(this.device.display);
-
-    const pressedColor = this.device.inputs.colors.turquoise;
-    const digitColor = this.device.inputs.colors.orange;
-    const deleteColor = this.device.inputs.colors.red;
-
-    this.device.inputs.a.pads.forEach(v => {
-      const offset = 2;
-      const x = v.x - offset;
-      const y = v.y - offset;
-      if ((x >= 1 && x <= 3 && y >= 1 && y <= 3) || (x === 4 && y === 2)) {
-        const digit = x === 4 ? 0 : (x - 1) * 3 + y;
-        responsiveButton(
-          () => digitsOutput.value += digit,
-          v, this.device, digitColor, pressedColor,
-        );
-      }
-      if (x === 4 && y === 1) {
-        responsiveButton(
-          () => digitsOutput.value = digitsOutput.value.slice(0, -1),
-          v, this.device, deleteColor, pressedColor,
-        );
-      }
-    });
-    this.device.display.addDrawable(digitsOutput);
-  }
-}
-
-function responsiveButton(f, button, device, releasedColor, pressedColor) {
-  button.setColor(releasedColor);
-  button.listen(({up}) => {
-    const color = up ? releasedColor : pressedColor;
-    button.setColor(color);
-    if (!up) {
-      f();
-    }
-  });
 }

@@ -1,20 +1,10 @@
 import {initPush, sendFrame} from 'ableton-push-canvas-display';
 
 
-import {createCanvas} from 'canvas';
+import {createCanvas, Image} from 'canvas';
 
-export class Drawable {
-  constructor(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.priority = 0;
-    this.touched = true;
-  }
-  draw(ctx, display) {
-  }
-}
+import {Cluster} from 'puppeteer-cluster';
+import fs from 'fs';
 
 export class Display {
   constructor() {
@@ -28,59 +18,41 @@ export class Display {
       secondary: '#880',
       primary: '#ff3',
       disabled: '#444',
-    }
+    };
     this.end = false;
-    this.drawables = [];
+  }
+
+  async start() {
+    this.canvas = createCanvas(this.width, this.height);
+    this.ctx = this.canvas.getContext('2d');
+    this.html = new HTMLDisplay();
+    initPush(err => {
+      if (err) {
+        console.log({err, msg: 'error initializing push'});
+      }
+      this.drawLoop();
+    });
+    this.html.start();
   }
 
   close() {
     this.end = true;
   }
 
-  clear() {
-    this.drawables = [];
-  }
-
-  addDrawable(drawable) {
-    this.drawables.push(drawable);
-    this.drawables.sort((a, b) => a.priority - b.priority);
-  }
-
-  removeDrawable(drawable) {
-    this.drawables = this.drawables.filter(v => v !== drawable);
-  }
-
   draw() {
-    const ctx = this.ctx;
-    const width = this.width;
-    const height = this.height;
-    const colors = this.colors;
     if (this.end) {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, width, height);
+      this.ctx.fillStyle = '#000';
+      this.ctx.fillRect(0, 0, this.width, this.height);
       return;
     }
+    this.updateTimes();
+    this.html.draw(this.ctx, this.canvas);
+  }
 
+  updateTimes() {
     const timestamp = new Date().getTime();
     this.timestampDelta = timestamp - (this.timestamp || timestamp);
     this.timestamp = timestamp;
-    if (!this.drawables.some(v => v.touched)) {
-      return;
-    }
-    ctx.fillStyle = colors.bg;
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = colors.bgOpaque;
-    // for (let i = 0; i < 8; i++) {
-    //   if (i % 2 !== 0) {
-    //     ctx.fillRect(i * width / 8, 0, width / 8, height);
-    //   }
-    // }
-    // for (let i = 0; i < 4; i++) {
-    //   if (i % 2 !== 0) {
-    //     ctx.fillRect(0, i * height / 4, width, height / 4);
-    //   }
-    // }
-    this.drawables.forEach(v => v.draw(ctx, this));
   }
 
   drawLoop() {
@@ -93,15 +65,117 @@ export class Display {
       ),
     );
   }
+}
 
-  start() {
-    this.canvas = createCanvas(this.width, this.height);
-    this.ctx = this.canvas.getContext('2d');
-    initPush(err => {
-      if (err) {
-        console.log(err);
-      }
-      this.drawLoop();
+export class HTMLDisplay {
+  constructor() {
+    this.image = null;
+    this.text = 'loading...';
+    this.running = true;
+    this.page = null;
+  }
+
+  async start() {
+    this.text = 'loading cluster...';
+    const userDataDir = './var/puppeteer';
+    if (!fs.existsSync(userDataDir)) {
+      fs.mkdirSync(userDataDir, {recursive: true});
+    }
+    this.cluster = await Cluster.launch({
+      concurrency: Cluster.CONCURRENCY_CONTEXT,
+      maxConcurrency: 2,
+      timeout: 2147483647,
+      userDataDir,
+      puppeteerOptions: {
+        headless: 'new',
+        args: [
+          // '--autoplay-policy=user-gesture-required',
+          // '--disable-background-networking',
+          // '--disable-background-timer-throttling',
+          // '--disable-backgrounding-occluded-windows',
+          // '--disable-breakpad',
+          '--disable-client-side-phishing-detection',
+          '--disable-component-update',
+          '--disable-default-apps',
+          // '--disable-dev-shm-usage',
+          // '--disable-domain-reliability',
+          '--disable-extensions',
+          '--disable-features=AudioServiceOutOfProcess',
+          // '--disable-hang-monitor',
+          // '--disable-ipc-flooding-protection',
+          '--disable-notifications',
+          // '--disable-offer-store-unmasked-wallet-cards',
+          '--disable-popup-blocking',
+          '--disable-print-preview',
+          '--disable-prompt-on-repost',
+          '--disable-renderer-backgrounding',
+          // '--disable-setuid-sandbox',
+          '--disable-speech-api',
+          // '--disable-sync',
+          // '--hide-scrollbars',
+          // '--ignore-gpu-blacklist',
+          // '--metrics-recording-only',
+          '--mute-audio',
+          '--no-default-browser-check',
+          '--no-first-run',
+          // '--no-pings',
+          '--no-sandbox',
+          // '--no-zygote',
+          '--password-store=basic',
+          '--use-mock-keychain',
+        ]
+      },
     });
+    this.text = 'loading page...';
+    await this.cluster.execute({}, async ({
+                                            page,
+                                            data,
+                                          }) => {
+      this.page = page;
+      page.setDefaultTimeout(0);
+      page.setDefaultNavigationTimeout(0);
+      await page.setContent(
+        fs.readFileSync('html/screen.html', 'utf8'),
+        {waitUntil: 'networkidle0'},
+      );
+      this.text = 'loading screenshot...';
+      while (this.running) {
+        const src = await (await page.$('body')).screenshot({
+          encoding: 'base64',
+        });
+        const img = new Image();
+        img.onload = async () => {
+          this.image = img;
+        };
+        img.src = `data:image/png;base64,${src}`;
+      }
+    });
+    await this.cluster.idle();
+    await this.cluster.close();
+  }
+
+  async sendCommand(id, data) {
+    if (!this.page) {
+      console.log({msg: 'no page to send command to'})
+      return;
+    }
+    await this.page.evaluate(({id, data}) => {
+      window.handleCommand(id, data);
+    }, {id, data});
+  }
+
+  draw(ctx, canvas) {
+    if (this.image) {
+      ctx.drawImage(this.image, 0, 0, canvas.width, canvas.height);
+      return;
+    }
+    // write loading in middle of canvas:
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#fff';
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.text, canvas.width / 2, canvas.height / 2);
   }
 }

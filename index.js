@@ -17,7 +17,7 @@ import {Flows} from './src/flows.js';
 
 async function startDevice() {
   const device = new Device(
-    new InputTree(new Config(), () => device.drawInputs()),
+    new InputTree(new Config(), () => device.drawInput()),
     new Display(),
   );
   await device.start();

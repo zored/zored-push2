@@ -1,11 +1,10 @@
-import {Drawable} from '../display.js';
 import fs from 'fs';
+import {Flow} from './flow.js';
 
 
-export class IntegratorFlow {
+export class Integrator extends Flow {
   constructor(device) {
-    this.device = device;
-
+    super(device)
     this.data = null;
     this.priorityPurposeColors = {
       integrator: 'turquoise',
@@ -15,7 +14,6 @@ export class IntegratorFlow {
     };
     this.selected = {};
     this.displayButtons = null;
-    this.stopped = false;
   }
 
   exampleData() {
@@ -34,18 +32,15 @@ export class IntegratorFlow {
   }
 
   async init() {
-    if (this.inited) {
-      return;
-    }
-    this.inited = true;
+    await super.init();
     this.displayButtons = new DisplayButtons(this.device);
     this.displayButtons.init();
     await this.loadData();
   }
 
   async start() {
-    await this.init();
-    if (this.stopped) {
+    await super.start();
+    if (!this.running) {
       return;
     }
     this.initInputs();
@@ -128,9 +123,8 @@ export class IntegratorFlow {
   }
 }
 
-export class DisplayButtons extends Drawable {
+export class DisplayButtons {
   constructor(device) {
-    super(0, 0, 0, 0);
     this.buttons = [];
     this.device = device;
   }
@@ -150,7 +144,6 @@ export class DisplayButtons extends Drawable {
   }
 
   init() {
-    this.device.display.addDrawable(this);
     this.listen();
   }
 
@@ -185,26 +178,5 @@ export class DisplayButtons extends Drawable {
         v.setColor(11);
       });
     });
-  }
-
-  draw(ctx, display) {
-    const width = display.width / 8;
-    for (let i = 0; i < 8; i++) {
-      for (let j = 0; j < 2; j++) {
-        const x = i * width;
-        const top = j == 0;
-        const textMargin = 5;
-        const y = top ? textMargin : display.height - textMargin;
-        const button = this.buttons[i + j * 8];
-        if (!button) {
-          continue;
-        }
-        ctx.fillStyle = display.colors[button.disabled ? 'disabled' : 'primary'];
-        ctx.textBaseline = top ? 'top' : 'bottom';
-        ctx.textAlign = 'center';
-        ctx.font = '18px Arial';
-        ctx.fillText(button.text, x + width / 2, y, width);
-      }
-    }
   }
 }

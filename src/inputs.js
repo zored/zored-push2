@@ -33,6 +33,7 @@ export const inputTypes = {
 export const events = {
   noteDown: 'noteon',
   noteUp: 'noteoff',
+  aftertouch: 'poly aftertouch',
 };
 
 export class Input {
@@ -213,6 +214,10 @@ export class InputTree {
 
   listen(v) {
     if (v._type === inputTypes.healthcheck) {
+      return;
+    }
+    // handle this later:
+    if (v._type === events.aftertouch) {
       return;
     }
     const data = {parent: v};

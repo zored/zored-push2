@@ -10,10 +10,10 @@ export class Device {
   }
 
   async start() {
-    this.display.start();
     await this.configure();
     this.listen(v => this.inputs.listen(v));
     // this.onExit();
+    await this.display.start();
   }
 
   async configure() {
@@ -30,6 +30,10 @@ export class Device {
     this.push2.midi.on('message', f);
   }
 
+  async displayCommand(id, data) {
+    await this.display.html.sendCommand(id, data);
+  }
+
   drawInput() {
     clearTimeout(this.drawInputTimeout);
     this.drawInputTimeout = setTimeout(() => {
@@ -37,6 +41,7 @@ export class Device {
       this.drawInputs();
     }, 0);
   }
+
   drawInputs() {
     Object.values(this.inputs.index).filter(v => v.touched).map(v => {
       if (v instanceof Button) {
@@ -54,7 +59,6 @@ export class Device {
   }
 
   reset() {
-    this.display.clear();
     this.inputs.clear();
     this.drawInputs();
   }

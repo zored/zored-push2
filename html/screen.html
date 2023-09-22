@@ -1,0 +1,169 @@
+<html>
+<head>
+    <style>
+        html {
+            background-color: #333;
+        }
+
+        body {
+            width: 960px;
+            height: 160px;
+            background-color: #000;
+            color: #fff;
+            position: relative;
+            top: 0;
+            font-family: 'Roboto Condensed', Arial, sans-serif;
+        }
+
+        #intro {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 960px;
+            height: 160px;
+            color: #fff;
+            font-size: 40px;
+            text-align: center;
+            line-height: 160px;
+            /* add big glow: */
+            text-shadow: 0 0 20px #fff;
+
+            /* one liner: */
+            animation: shadow 3s infinite alternate ease-in-out 0s;
+        }
+
+        #color {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            vertical-align: middle;
+            margin-top: -15px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+
+        @keyframes shadow {
+            from {
+                text-shadow: 0 0 20px #ff3;
+            }
+            to {
+                text-shadow: 0 0 10px #f3f;
+            }
+        }
+
+        .displayButtons {
+            position: absolute;
+            left: 0;
+            right: 0;
+            color: #fff;
+            height: 20px;
+            font-size: 16px;
+            vertical-align: middle;
+            transition: top 1s, bottom 1s, opacity 0.5s;
+        }
+        .displayButtons.row1 {
+            top: 0;
+        }
+        .displayButtons.row1.inactive {
+            top: -20px;
+            opacity: 0;
+        }
+        .displayButtons.row2.inactive {
+            bottom: -20px;
+            opacity: 0;
+        }
+        .displayButtons.row2 {
+            bottom: 0;
+        }
+        .displayButton{
+            display: inline-block;
+            width: 12.5%;
+            text-align: center;
+            height: 100%;
+        }
+        .displayButtons.row1 .displayButton:nth-child(odd) {
+            background-color: #122;
+            border-radius: 0 0px 5px 5px;
+        }
+        .displayButtons.row2 .displayButton:nth-child(odd) {
+            background-color: #122;
+            border-radius: 5px 5px 0 0;
+        }
+    </style>
+    <link href='https://fonts.googleapis.com/css?family=Roboto Condensed' rel='stylesheet'>
+</head>
+<body>
+<div id="app">
+    <div class="displayButtons" :class="row.css" v-for="row in displayButtonRows">
+        <div class="displayButton" v-for="button in row.buttons" @click="displayButtonClick(button)">
+            <div class="displayButtonLabel">{{ button.label }}</div>
+        </div>
+    </div>
+    <div id="intro">
+        <div id="color" v-if="introBackgroundColor" :style="{backgroundColor: introBackgroundColor}"></div>
+        {{ intro }}
+    </div>
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+  const {
+    createApp,
+    ref,
+  } = Vue;
+  createApp({
+    displayButtonClick(b) {
+      alert(b.label);
+    },
+    setup() {
+      window.handleCommand = async (id, v) => {
+        switch (id) {
+          case 'logColor':
+            let palette = '';
+            if (v.palette) {
+              const {
+                r,
+                g,
+                b,
+                a,
+              } = v.palette;
+              const rgb = `rgb(${r}, ${g}, ${b})`;
+              palette = ` ${rgb} w=${a}`;
+              introBackgroundColor.value = rgb;
+            }
+            intro.value = `#${v.color}${palette}`;
+            break;
+          default:
+            throw new Error('Unknown command: ' + id);
+        }
+      };
+      const intro = ref('zored push');
+      const introBackgroundColor = ref(null);
+      const displayButtonRows = ref([]);
+      for (let row = 0; row < 2; row++) {
+        const buttons = [];
+        for (let button = 0; button < 8; button++) {
+          buttons.push({
+            label: `test ${row + 1}-${button + 1}`,
+          });
+        }
+        displayButtonRows.value.push({
+          css: `row${row + 1}`,
+          buttons,
+        });
+      }
+
+      setTimeout(() => {
+        displayButtonRows.value[0].css += ' inactive';
+        displayButtonRows.value[1].css += ' inactive';
+      }, 1000);
+
+      return {
+        intro,
+        introBackgroundColor,
+        displayButtonRows,
+      };
+    },
+  }).mount('#app');
+</script>
+</body>
+</html>
