@@ -6,7 +6,6 @@ import {Flows} from './src/flows.js';
 
 ((async function () {
   try {
-
     const device = await startDevice();
     await new Flows(device).start();
   } catch (e) {

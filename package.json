@@ -14,6 +14,7 @@
     "ableton-push-canvas-display": "^1.0.1",
     "ableton-push2": "zored/node-ableton-push2#dd80ad7cb16305a26821266078c98ea7422b818e",
     "canvas": "^2.11.2",
+    "node-window-manager": "^2.2.4",
     "puppeteer-cluster": "^0.23.0",
     "robotjs": "^0.6.0",
     "usb": "^2.10.0"
