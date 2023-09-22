@@ -67,27 +67,33 @@ export class Knob extends Input {
 }
 
 export class Button extends Input {
-  constructor(v) {
+  constructor(v, notifyTouched) {
     super(v);
     this.touched = false;
     this.color = 0;
     this.animation = 0;
+    this.notifyTouched = notifyTouched;
   }
 
   setColor(v) {
     this.color = v;
-    this.touched = true;
+    this.redraw();
   }
 
   setAnimation(v) {
     this.animation = v;
+    this.redraw();
+  }
+
+  redraw() {
     this.touched = true;
+    this.notifyTouched();
   }
 }
 
 export class RegularButton extends Button {
-  constructor(v) {
-    super(v);
+  constructor(v, notifyTouched) {
+    super(v, notifyTouched);
     this.controller = v.controller;
   }
 
@@ -98,7 +104,7 @@ export class RegularButton extends Button {
 
   displayButtonIndex() {
     const m = this.v.name.match(/(lower|upper) display button (\d)/);
-    console.log({m})
+    console.log({m});
     if (!m) {
       return -1;
     }
@@ -108,8 +114,8 @@ export class RegularButton extends Button {
 }
 
 export class Pad extends Button {
-  constructor(v) {
-    super(v);
+  constructor(v, notifyTouched) {
+    super(v, notifyTouched);
     const m = v.name.match(/(\d),(\d)/);
     if (m) {
       this.y = parseInt(m[1]);
@@ -125,7 +131,8 @@ export class Pad extends Button {
 }
 
 export class InputTree {
-  constructor(config) {
+  constructor(config, notifyTouched) {
+    this.notifyTouched = notifyTouched;
     this.config = config;
     this.colors = {
       turquoise: 14,
@@ -178,18 +185,18 @@ export class InputTree {
       note,
       _type: inputTypes.note,
       name: keysNames.nameById(note),
-    })));
+    }, this.notifyTouched)));
 
     a.buttons.bottom = seq([[20, 27]]).map((controller, i) => (new RegularButton({
       controller,
       _type: inputTypes.button,
       name: controlsNames.nameById(controller),
-    })));
+    }, this.notifyTouched)));
     a.buttons.top = seq([[102, 109]]).map((controller, i) => (new RegularButton({
       controller,
       _type: inputTypes.button,
       name: controlsNames.nameById(controller),
-    })));
+    }, this.notifyTouched)));
 
     this.index = Object.fromEntries(this.indexInputs());
     if (this.config.isDebug()) {
@@ -225,6 +232,7 @@ export class InputTree {
       v.listeners = [];
       if (v instanceof Button) {
         v.setColor(0);
+        v.setAnimation('stopTransition');
       }
     });
   }

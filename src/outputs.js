@@ -4,35 +4,58 @@ export class CubeOutput extends Drawable {
 
   constructor(x, y, width, height) {
     super(x, y, width, height);
-    this.angle = 0;
-    this.speed = 1;
+    this.angleX = 0;
+    this.angleY = 0;
+    this.angleZ = 0;
+    this.speedX = 1;
+    this.speedY = 1;
+    this.speedZ = 1;
     this.hue = 0;
     this.slowDown()
   }
 
   slowDown() {
     setInterval(() => {
-      this.speed *= 0.99;
+      this.speedX *= 0.99;
+      this.speedY *= 0.99;
+      this.speedZ *= 0.99;
     }, 100)
   }
   draw(ctx, display) {
     this.draw3DCube(ctx, display);
   }
 
-  rotateCubeAroundCenter(cube, angle) {
-    const sin = Math.sin(angle);
-    const cos = Math.cos(angle);
-    // rotate around middle:
-    const middle = cube.reduce(([x, y, z], [x2, y2, z2]) => {
-      return [x + x2, y + y2, z + z2];
-    }, [0, 0, 0]).map((v) => v / cube.length);
-    return cube.map(([x, y, z]) => {
+
+  rotateCubeAroundCenter(cube, angleX, angleY, angleZ) {
+    const cosX = Math.cos(angleX);
+    const sinX = Math.sin(angleX);
+    const cosY = Math.cos(angleY);
+    const sinY = Math.sin(angleY);
+    const cosZ = Math.cos(angleZ);
+    const sinZ = Math.sin(angleZ);
+
+    const rotateX = ([x, y, z]) => {
       return [
-        (x - middle[0]) * cos - (y - middle[1]) * sin + middle[0],
-        (x - middle[0]) * sin + (y - middle[1]) * cos + middle[1],
+        x,
+        y * cosX - z * sinX,
+        y * sinX + z * cosX,
+      ];
+    };
+    const rotateY = ([x, y, z]) => {
+      return [
+        x * cosY + z * sinY,
+        y,
+        -x * sinY + z * cosY,
+      ];
+    };
+    const rotateZ = ([x, y, z]) => {
+      return [
+        x * cosZ - y * sinZ,
+        x * sinZ + y * cosZ,
         z,
       ];
-    });
+    };
+    return cube.map(v => rotateZ(rotateY(rotateX(v))));
   }
 
   draw3DCube(ctx, display) {
@@ -47,8 +70,10 @@ export class CubeOutput extends Drawable {
       [1, 1, 1],
     ];
 
-    this.angle += display.timestampDelta * this.speed / 1000
-    cube = this.rotateCubeAroundCenter(cube, this.angle);
+    this.angleX += display.timestampDelta * this.speedX / 1000
+    this.angleY += display.timestampDelta * this.speedY / 1000
+    this.angleZ += display.timestampDelta * this.speedZ / 1000
+    cube = this.rotateCubeAroundCenter(cube, this.angleX, this.angleY, this.angleZ);
     const cube2d = cube.map(([x, y, z]) => {
       return [
         (x - y) * Math.cos(Math.PI / 4),
@@ -57,8 +82,8 @@ export class CubeOutput extends Drawable {
     });
     const cube2dScaled = cube2d.map(([x, y]) => {
       return [
-        x * this.width / 2 + this.width / 2,
-        y * this.height / 2 + this.height / 2,
+        x * this.width / 3 + this.width / 3,
+        y * this.height / 3 + this.height / 3,
       ];
     });
     ctx.strokeStyle = `hsl(${this.hue}, 100%, 50%)`;

@@ -6,6 +6,7 @@ export class Device {
     this.inputs = inputs;
     this.display = display;
     this.push2 = null;
+    this.drawInputTimeout = null;
   }
 
   async start() {
@@ -17,9 +18,8 @@ export class Device {
 
   async configure() {
     const p = new ableton.Push2('user');
-
     await Promise.all([
-      p.setTouchStripConfiguration(),
+      p.setTouchStripConfiguration(undefined),
       p.setDisplayBrightness(255),
     ]);
     p.setAftertouchMode('poly');
@@ -30,6 +30,13 @@ export class Device {
     this.push2.midi.on('message', f);
   }
 
+  drawInput() {
+    clearTimeout(this.drawInputTimeout);
+    this.drawInputTimeout = setTimeout(() => {
+      this.drawInputTimeout = null;
+      this.drawInputs();
+    }, 0);
+  }
   drawInputs() {
     Object.values(this.inputs.index).filter(v => v.touched).map(v => {
       if (v instanceof Button) {

@@ -6,11 +6,11 @@ export class Flows {
   constructor(device) {
     this.device = device;
     this.flows = [
-      new IntegratorFlow(device),
-      new HTMLFlow(device),
       new ColorsFlow(device, 0),
       new ColorsFlow(device, 64),
+      new IntegratorFlow(device),
       new CalcFlow(device),
+      new HTMLFlow(device),
     ];
     this.index = 0;
   }
@@ -31,8 +31,8 @@ export class Flows {
   async update() {
     this.device.reset();
     this.listenKnob();
-    const r = this.flows[this.index].start();
     this.flows.forEach((v, i) => v.stopped = i !== this.index);
+    const r = this.flows[this.index].start();
     await r;
   }
 }
@@ -49,12 +49,10 @@ class ColorsFlow {
       v.listen(({up}) => {
         if (up) {
           ['bottom', 'top'].forEach(row => this.device.inputs.a.buttons[row][v.y - 1].setColor(v.color));
-          this.device.drawInputs();
           console.log(v.color);
         }
       });
     });
-    this.device.drawInputs();
 
     const size = 100;
     const d = this.device.display;
@@ -65,11 +63,17 @@ class ColorsFlow {
       size,
     );
     d.addDrawable(cube);
-    this.device.inputs.a.knobs[1].listen(({up}) => {
-      cube.speed += (up ? 1 : -1) * 0.1;
-    });
     this.device.inputs.a.knobs[2].listen(({up}) => {
       cube.hue += up ? 1 : -1;
+    });
+    this.device.inputs.a.knobs[3].listen(({up}) => {
+      cube.speedX += (up ? 1 : -1) * 0.1;
+    });
+    this.device.inputs.a.knobs[4].listen(({up}) => {
+      cube.speedY += (up ? 1 : -1) * 0.1;
+    });
+    this.device.inputs.a.knobs[5].listen(({up}) => {
+      cube.speedZ += (up ? 1 : -1) * 0.1;
     });
   }
 }
@@ -105,7 +109,6 @@ class CalcFlow {
       }
     });
     this.device.display.addDrawable(digitsOutput);
-    this.device.drawInputs();
   }
 }
 
@@ -117,8 +120,5 @@ function responsiveButton(f, button, device, releasedColor, pressedColor) {
     if (!up) {
       f();
     }
-    device.drawInputs();
   });
-
-  device.drawInputs();
 }
