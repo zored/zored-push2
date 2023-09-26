@@ -42,6 +42,10 @@ export class Display {
     this.end = true;
   }
 
+  async reset() {
+    await this.html.sendCommand('reset', null);
+  }
+
   draw() {
     if (this.end) {
       this.ctx.fillStyle = '#000';

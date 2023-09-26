@@ -18,15 +18,22 @@ export class Device {
 
   async configure() {
     const p = new ableton.Push2('user');
-    await Promise.all([
+    const [sensitivities] = await Promise.all([
+      p.get400gPadValues(),
       p.setTouchStripConfiguration(undefined),
       p.setDisplayBrightness(255),
     ]);
     p.setAftertouchMode('poly');
+
+    Object.entries(sensitivities)
+      .forEach(([scene, values]) =>
+        p.set400gPadValues(scene, Object.values(values).map(v => Math.round(v * 0.4))),
+      );
     this.push2 = p;
   }
 
   listen(f) {
+    this.push2.midi.setMaxListeners(255);
     this.push2.midi.on('message', f);
   }
 
@@ -59,6 +66,7 @@ export class Device {
   }
 
   reset() {
+    this.display.reset().then();
     this.inputs.clear();
     this.drawInputs();
   }

@@ -106,6 +106,7 @@
 </div>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
+  window.handleCommand = () => {};
   const {
     createApp,
     ref,
@@ -115,26 +116,37 @@
       alert(b.label);
     },
     setup() {
-      window.handleCommand = async (id, v) => {
-        switch (id) {
-          case 'logColor':
-            let palette = '';
-            if (v.palette) {
-              const {
-                r,
-                g,
-                b,
-                a,
-              } = v.palette;
-              const rgb = `rgb(${r}, ${g}, ${b})`;
-              palette = ` ${rgb} w=${a}`;
-              introBackgroundColor.value = rgb;
-            }
-            intro.value = `#${v.color}${palette}`;
-            break;
-          default:
-            throw new Error('Unknown command: ' + id);
+      const commands = {
+        async logColor(v) {
+          let palette = '';
+          let rgb = null;
+          if (v.palette) {
+            const {
+              r,
+              g,
+              b,
+              a,
+            } = v.palette;
+            rgb = `rgb(${r}, ${g}, ${b})`;
+            palette = ` ${rgb} w=${a}`;
+          }
+          commands.intro({text: `#${v.color}${palette}`, rgb})
+        },
+        intro(v) {
+          intro.value = v.text;
+          introBackgroundColor.value = v.color || null;
+        },
+        async reset() {
+          intro.value = null;
+          introBackgroundColor.value = null;
         }
+      };
+      window.handleCommand = async (id, v) => {
+        const command = commands[id];
+        if (!command) {
+          throw new Error('Unknown command: ' + id);
+        }
+        await command(v);
       };
       const intro = ref('zored push');
       const introBackgroundColor = ref(null);

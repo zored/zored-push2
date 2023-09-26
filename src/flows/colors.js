@@ -10,6 +10,7 @@ export class Colors extends Flow {
   async start() {
     await super.start();
     this.colorPadsLogOnChange();
+    await this.device.displayCommand('intro', {text: 'choose color 😏'});
 
   }
   async init() {
