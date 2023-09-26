@@ -28,7 +28,10 @@ export class Display {
     this.html = new HTMLDisplay();
     initPush(err => {
       if (err) {
-        console.log({err, msg: 'error initializing push'});
+        console.log({
+          err,
+          msg: 'error initializing push',
+        });
       }
       this.drawLoop();
     });
@@ -123,7 +126,7 @@ export class HTMLDisplay {
           // '--no-zygote',
           '--password-store=basic',
           '--use-mock-keychain',
-        ]
+        ],
       },
     });
     this.text = 'loading page...';
@@ -140,14 +143,20 @@ export class HTMLDisplay {
       );
       this.text = 'loading screenshot...';
       while (this.running) {
-        const src = await (await page.$('body')).screenshot({
-          encoding: 'base64',
-        });
-        const img = new Image();
-        img.onload = async () => {
-          this.image = img;
-        };
-        img.src = `data:image/png;base64,${src}`;
+        try {
+          const src = await (await page.$('body')).screenshot({
+            encoding: 'base64',
+          });
+          const img = new Image();
+          img.onload = async () => {
+            this.image = img;
+          };
+          img.src = `data:image/png;base64,${src}`;
+        } catch (e) {
+          if (e.message.includes('Unable to capture screenshot')) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+        }
       }
     });
     await this.cluster.idle();
@@ -156,12 +165,18 @@ export class HTMLDisplay {
 
   async sendCommand(id, data) {
     if (!this.page) {
-      console.log({msg: 'no page to send command to'})
+      console.log({msg: 'no page to send command to'});
       return;
     }
-    await this.page.evaluate(({id, data}) => {
+    await this.page.evaluate(({
+                                id,
+                                data,
+                              }) => {
       window.handleCommand(id, data);
-    }, {id, data});
+    }, {
+      id,
+      data,
+    });
   }
 
   draw(ctx, canvas) {

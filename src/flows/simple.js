@@ -13,18 +13,18 @@ export class Simple extends Flow {
     const colors = this.device.inputs.colors;
     const color = colors.blue;
     const colorPulse = colors.red;
-    const colorPressed = colors.orange
+    const colorPressed = colors.orange;
     b.setColor(color);
     let zoomMuted = false;
     b.listen(async ({up}) => {
-      if (!up) {
-        b.setColor(colorPressed);
+      if (up) {
+        muted = !muted;
+        b.setColor(muted ? color : colorPulse);
+        b.setAnimation(muted ? 'stopTransition' : 'pulsingHalf');
         return;
       }
       robot.keyTap('o', ['control', 'command', 'shift', 'alt']);
-      muted = !muted;
-      b.setColor(muted ? color : colorPulse)
-      b.setAnimation(muted ? 'stopTransition' : 'pulsingHalf');
+      b.setColor(colorPressed);
     });
   }
 }
