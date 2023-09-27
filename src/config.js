@@ -1,5 +1,11 @@
 export class Config {
   isDebug() {
-    return process.env.DEBUG === '1';
+    return this.boolEnv('DEBUG');
+  }
+  isLocal() {
+    return this.boolEnv('LOCAL');
+  }
+  boolEnv(n) {
+    return process.env[n] === '1';
   }
 }

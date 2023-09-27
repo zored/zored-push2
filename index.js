@@ -8,6 +8,7 @@ import {Flows} from './src/flows.js';
   try {
     const device = await startDevice();
     await new Flows(device).start();
+    await device.afterStart();
   } catch (e) {
     console.log({e});
     process.exit(1);
@@ -15,9 +16,11 @@ import {Flows} from './src/flows.js';
 })()).then();
 
 async function startDevice() {
+  const config = new Config();
   const device = new Device(
-    new InputTree(new Config(), () => device.drawInput()),
-    new Display(),
+    new InputTree(config, () => device.drawInput()),
+    new Display(config),
+    config,
   );
   await device.start();
   return device;

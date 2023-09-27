@@ -3,6 +3,7 @@
     <style>
         html {
             background-color: #333;
+            overflow: hidden;
         }
 
         body {
@@ -59,34 +60,56 @@
             height: 20px;
             font-size: 16px;
             vertical-align: middle;
-            transition: top 1s, bottom 1s, opacity 0.5s;
+            transition: top 200ms, bottom 200ms, opacity 0.5s;
         }
+
         .displayButtons.row1 {
             top: 0;
         }
+
         .displayButtons.row1.inactive {
             top: -20px;
             opacity: 0;
         }
+
         .displayButtons.row2.inactive {
             bottom: -20px;
             opacity: 0;
         }
+
         .displayButtons.row2 {
             bottom: 0;
         }
-        .displayButton{
+
+        .displayButton.inactive {
+            opacity: 0.3;
+        }
+
+        .displayButton.inactive:after {
+            content: '...';
+            vertical-align: bottom;
+        }
+
+        .displayButton {
             display: inline-block;
             width: 12.5%;
             text-align: center;
             height: 100%;
         }
+
+        .displayButtonLabel {
+            display: inline-block;
+            height: 100%;
+            vertical-align: bottom;
+        }
+
         .displayButtons.row1 .displayButton:nth-child(odd) {
-            background-color: #122;
+            background-color: #011;
             border-radius: 0 0px 5px 5px;
         }
+
         .displayButtons.row2 .displayButton:nth-child(odd) {
-            background-color: #122;
+            background-color: #011;
             border-radius: 5px 5px 0 0;
         }
     </style>
@@ -94,9 +117,15 @@
 </head>
 <body>
 <div id="app">
-    <div class="displayButtons" :class="row.css" v-for="row in displayButtonRows">
-        <div class="displayButton" v-for="button in row.buttons" @click="displayButtonClick(button)">
-            <div class="displayButtonLabel">{{ button.label }}</div>
+    <div class="displayButtons" :class="{
+      inactive: !row.active,
+        row1: row.n === 1,
+        row2: row.n === 2,
+    }" v-for="row in displayButtonRows">
+        <div class="displayButton" :class="{
+          inactive: button.disabled
+        }" v-for="button in row.buttons" @click="displayButtonClick(button)">
+            <div class="displayButtonLabel" v-text="button.label"></div>
         </div>
     </div>
     <div id="intro">
@@ -106,7 +135,8 @@
 </div>
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script>
-  window.handleCommand = () => {};
+  window.handleCommand = () => {
+  };
   const {
     createApp,
     ref,
@@ -117,6 +147,27 @@
     },
     setup() {
       const commands = {
+        displayButtons(v) {
+          commands.resetDisplayButtons();
+          v.all.forEach(({
+                           row,
+                           index,
+                           text,
+                           disabled,
+                         }) => {
+            const r = displayButtonRows.value[row];
+            const b = r.buttons[index];
+            b.label = text;
+            b.disabled = disabled;
+          });
+          displayButtonRows.value.forEach((v) => v.active = v.buttons.some((b) => b.label.length > 0));
+        },
+        resetDisplayButtons() {
+          displayButtonRows.value.forEach((v) => {
+            v.buttons.forEach((b) => b.label = '');
+            v.active = false;
+          });
+        },
         async logColor(v) {
           let palette = '';
           let rgb = null;
@@ -130,7 +181,10 @@
             rgb = `rgb(${r}, ${g}, ${b})`;
             palette = ` ${rgb} w=${a}`;
           }
-          commands.intro({text: `#${v.color}${palette}`, rgb})
+          commands.intro({
+            text: `#${v.color}${palette}`,
+            rgb,
+          });
         },
         intro(v) {
           intro.value = v.text;
@@ -139,7 +193,8 @@
         async reset() {
           intro.value = null;
           introBackgroundColor.value = null;
-        }
+          this.resetDisplayButtons();
+        },
       };
       window.handleCommand = async (id, v) => {
         const command = commands[id];
@@ -155,19 +210,34 @@
         const buttons = [];
         for (let button = 0; button < 8; button++) {
           buttons.push({
-            label: `test ${row + 1}-${button + 1}`,
+            label: 'wow!',
           });
         }
         displayButtonRows.value.push({
-          css: `row${row + 1}`,
+          n: row + 1,
           buttons,
+          active: true,
         });
       }
 
-      setTimeout(() => {
-        displayButtonRows.value[0].css += ' inactive';
-        displayButtonRows.value[1].css += ' inactive';
-      }, 1000);
+      setTimeout(() => displayButtonRows.value.forEach((v) => v.active = false), 1000);
+
+
+      const runTest = () => setTimeout(() => {
+        handleCommand('displayButtons', {
+          all: [{
+            row: 1,
+            disabled: true,
+            index: 0,
+            text: 'world',
+          }, {
+            row: 0,
+            index: 0,
+            text: 'hello',
+          }],
+        });
+      }, 1500);
+      // runTest();
 
       return {
         intro,

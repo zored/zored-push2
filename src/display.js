@@ -7,7 +7,8 @@ import {Cluster} from 'puppeteer-cluster';
 import fs from 'fs';
 
 export class Display {
-  constructor() {
+  constructor(config) {
+    this.config = config;
     this.width = 960;
     this.height = 160;
     this.canvas = null;
@@ -25,21 +26,14 @@ export class Display {
   async start() {
     this.canvas = createCanvas(this.width, this.height);
     this.ctx = this.canvas.getContext('2d');
-    this.html = new HTMLDisplay();
-    initPush(err => {
-      if (err) {
-        console.log({
-          err,
-          msg: 'error initializing push',
-        });
-      }
-      this.drawLoop();
-    });
-    this.html.start();
+    this.html = new HTMLDisplay(this.config);
+    this.startDrawLoop();
+    this.html.start(this.canvas).then();
   }
 
   close() {
     this.end = true;
+    this.html.close();
   }
 
   async reset() {
@@ -52,14 +46,7 @@ export class Display {
       this.ctx.fillRect(0, 0, this.width, this.height);
       return;
     }
-    this.updateTimes();
     this.html.draw(this.ctx, this.canvas);
-  }
-
-  updateTimes() {
-    const timestamp = new Date().getTime();
-    this.timestampDelta = timestamp - (this.timestamp || timestamp);
-    this.timestamp = timestamp;
   }
 
   drawLoop() {
@@ -72,17 +59,33 @@ export class Display {
       ),
     );
   }
+
+  startDrawLoop() {
+    if (this.config.isLocal()) {
+      return;
+    }
+    initPush(err => {
+      if (err) {
+        console.log({
+          err,
+          msg: 'error initializing push',
+        });
+      }
+      this.drawLoop();
+    });
+  }
 }
 
 export class HTMLDisplay {
-  constructor() {
+  constructor(config) {
+    this.config = config;
     this.image = null;
     this.text = 'loading...';
     this.running = true;
     this.page = null;
   }
 
-  async start() {
+  async start(canvas) {
     this.text = 'loading cluster...';
     const userDataDir = './var/puppeteer';
     if (!fs.existsSync(userDataDir)) {
@@ -94,7 +97,7 @@ export class HTMLDisplay {
       timeout: 2147483647,
       userDataDir,
       puppeteerOptions: {
-        headless: 'new',
+        headless: this.config.isLocal() ? false : 'new',
         args: [
           // '--autoplay-policy=user-gesture-required',
           // '--disable-background-networking',
@@ -141,10 +144,17 @@ export class HTMLDisplay {
       this.page = page;
       page.setDefaultTimeout(0);
       page.setDefaultNavigationTimeout(0);
+      await page.setViewport({ width: canvas.width, height: canvas.height});
+      await page.goto('about:blank');
       await page.setContent(
         fs.readFileSync('html/screen.html', 'utf8'),
         {waitUntil: 'networkidle0'},
       );
+      if (this.config.isLocal()) {
+        // wait forever
+        await new Promise(() => {});
+        return;
+      }
       this.text = 'loading screenshot...';
       while (this.running) {
         try {
@@ -163,7 +173,11 @@ export class HTMLDisplay {
         }
       }
     });
-    await this.cluster.idle();
+  }
+
+  async close() {
+    this.running = false;
+    // await this.cluster.idle();
     await this.cluster.close();
   }
 

@@ -1,22 +1,47 @@
 import ableton from 'ableton-push2';
 import {Button} from './inputs.js';
+import {LocalPush2} from './local_push2.js';
+import { createInterface } from "node:readline"
+
 
 export class Device {
-  constructor(inputs, display) {
+  constructor(inputs, display, config) {
     this.inputs = inputs;
     this.display = display;
+    this.config = config;
     this.push2 = null;
     this.drawInputTimeout = null;
+    this.closing = false;
+  }
+
+  async afterStart() {
+    await this.readLocalInputs();
+  }
+
+  async readLocalInputs() {
+    if (!this.config.isLocal()) {
+      return
+    }
+    console.log('JSON for emit midi:');
+    for await (const line of createInterface({ input: process.stdin })) {
+      const v = JSON.parse(line);
+      this.push2.emitMidi(v);
+      console.log('Input: ');
+    }
   }
 
   async start() {
-    await this.configure();
+    this.onExit();
+    await this.initPush2();
     this.listen(v => this.inputs.listen(v));
-    // this.onExit();
     await this.display.start();
   }
 
-  async configure() {
+  async initPush2() {
+    if (this.config.isLocal()) {
+      this.push2 = new LocalPush2();
+      return
+    }
     const p = new ableton.Push2('user');
     const [sensitivities] = await Promise.all([
       p.get400gPadValues(),
@@ -60,8 +85,8 @@ export class Device {
   }
 
   onExit() {
-    ['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM'].forEach((v) => {
-      process.on(v, () => this.close());
+    ['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM', 'uncaughtException'].forEach((v) => {
+      process.on(v, e => this.close(v, e));
     });
   }
 
@@ -71,9 +96,14 @@ export class Device {
     this.drawInputs();
   }
 
-  close() {
-    this.display.close();
+  close(v, e) {
+    console.log({v,e});
+    if (this.closing) {
+      return
+    }
+    this.closing = true;
     this.reset();
+    this.display.close();
     this.push2.close();
   }
 }
