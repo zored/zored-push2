@@ -3,6 +3,7 @@ export class Flow {
     this.device = device;
     this.inited = false;
     this.running = false;
+    this.customUrl = null;
   }
 
   async start() {
@@ -11,6 +12,7 @@ export class Flow {
       await this.init();
       this.inited = true;
     }
+    this.device.display.html.goto(this.customUrl);
   }
 
   async stop() {

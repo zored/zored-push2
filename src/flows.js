@@ -37,5 +37,4 @@ export class Flows {
       await this.start();
     });
   }
-
 }

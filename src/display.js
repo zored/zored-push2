@@ -83,6 +83,21 @@ export class HTMLDisplay {
     this.text = 'loading...';
     this.running = true;
     this.page = null;
+    this.url = null;
+  }
+
+  async goto(url) {
+    if (!this.page || this.url === url) {
+      return;
+    }
+    if (!url) {
+      await this.gotoDefault();
+      return;
+    }
+    await Promise.all([this.page.waitForNavigation(), this.page.goto(url, {
+      timeout: 0,
+      waitUntil: 'networkidle0',
+    })]);
   }
 
   async start(canvas) {
@@ -144,15 +159,15 @@ export class HTMLDisplay {
       this.page = page;
       page.setDefaultTimeout(0);
       page.setDefaultNavigationTimeout(0);
-      await page.setViewport({ width: canvas.width, height: canvas.height});
-      await page.goto('about:blank');
-      await page.setContent(
-        fs.readFileSync('html/screen.html', 'utf8'),
-        {waitUntil: 'networkidle0'},
-      );
+      await page.setViewport({
+        width: canvas.width,
+        height: canvas.height,
+      });
+      await this.gotoDefault();
       if (this.config.isLocal()) {
         // wait forever
-        await new Promise(() => {});
+        await new Promise(() => {
+        });
         return;
       }
       this.text = 'loading screenshot...';
@@ -175,6 +190,17 @@ export class HTMLDisplay {
     });
   }
 
+  async gotoDefault() {
+    await this.page.goto('about:blank', {
+      timeout: 0,
+      waitUntil: 'networkidle0',
+    });
+    await this.page.setContent(
+      fs.readFileSync('html/screen.html', 'utf8'),
+      {waitUntil: 'networkidle0'},
+    );
+  }
+
   async close() {
     this.running = false;
     // await this.cluster.idle();
@@ -186,15 +212,23 @@ export class HTMLDisplay {
       console.log({msg: 'no page to send command to'});
       return;
     }
-    await this.page.evaluate(({
-                                id,
-                                data,
-                              }) => {
-      window.handleCommand(id, data);
-    }, {
-      id,
-      data,
-    });
+
+    try {
+      await this.page.evaluate(({
+                                  id,
+                                  data,
+                                }) => {
+        window.handleCommand(id, data);
+      }, {
+        id,
+        data,
+      });
+    } catch (e) {
+      console.error({
+        e,
+        msg: 'error sending command',
+      });
+    }
   }
 
   draw(ctx, canvas) {
@@ -210,5 +244,90 @@ export class HTMLDisplay {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.text, canvas.width / 2, canvas.height / 2);
+  }
+}
+
+
+// put in init:
+// this.displayButtons = new DisplayButtons(this.device);
+// this.displayButtons.init();
+export class DisplayButtons {
+  constructor(device) {
+    this.buttons = [];
+    this.device = device;
+  }
+
+  reset() {
+    this.buttons = [];
+    this.syncDisplay();
+  }
+
+  setButton(text, up = async (button, v, index) => {
+  }, row = 0, index = 0) {
+    const o = {
+      text,
+      up,
+      row,
+      index,
+    };
+    this.buttons[row * 8 + index] = o;
+    this.syncDisplayLater();
+    return o;
+  }
+
+  syncDisplayLater() {
+    clearTimeout(this.syncDisplayTimeout);
+    this.syncDisplayTimeout = setTimeout(() => {
+      this.syncDisplay();
+    }, 1);
+  }
+
+  syncDisplay() {
+    this.device.displayCommand('displayButtons', {all: this.buttons}).then();
+  }
+
+  init() {
+    this.listen();
+  }
+
+  toggleButton(b, enabled) {
+    if (!b) {
+      return;
+    }
+    b.disabled = !enabled;
+    this.syncDisplayLater();
+  }
+
+  listen() {
+    [
+      ...this.device.inputs.a.buttons.top,
+      ...this.device.inputs.a.buttons.bottom,
+    ].forEach(v => {
+      v.listen(async ({up}) => {
+        if (!up) {
+          return;
+        }
+        const index = v.displayButtonIndex();
+        let button = this.buttons[index];
+        if (!button) {
+          button = this.buttons[index] = {disabled: true};
+        }
+        if (button.disabled) {
+          return;
+        }
+        this.toggleButton(button, false);
+        v.setColor(96);
+        try {
+          await button?.up?.(button, v, index);
+        } catch (e) {
+          console.error({
+            e,
+            msg: 'error in button listener',
+          });
+        }
+        this.toggleButton(button, true);
+        v.setColor(11);
+      });
+    });
   }
 }

@@ -85,7 +85,13 @@ export class Device {
   }
 
   onExit() {
-    ['exit', 'SIGINT', 'SIGUSR1', 'SIGUSR2', 'SIGTERM', 'uncaughtException'].forEach((v) => {
+    ['exit',
+      'SIGINT',
+      'SIGUSR1',
+      'SIGUSR2',
+      'SIGTERM',
+      // 'uncaughtException'
+    ].forEach((v) => {
       process.on(v, e => this.close(v, e));
     });
   }
