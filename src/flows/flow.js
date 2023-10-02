@@ -12,7 +12,7 @@ export class Flow {
       await this.init();
       this.inited = true;
     }
-    this.device.display.html.goto(this.customUrl);
+    this.device.display.browser.goto(this.customUrl);
   }
 
   async stop() {

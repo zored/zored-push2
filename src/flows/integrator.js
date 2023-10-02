@@ -1,11 +1,10 @@
 import {Flow} from './flow.js';
-import {DisplayButtons} from '../display.js';
 
 
 export class Integrator extends Flow {
   constructor(device) {
     super(device);
-    this.customUrl = 'http://localhost/';
+    this.customUrl = 'http://localhost/#push2';
     this.data = null;
     this.priorityPurposeColors = {
       integrator: 'turquoise',
@@ -22,7 +21,30 @@ export class Integrator extends Flow {
     if (!this.running) {
       return;
     }
-    // todo
+    await this.device.display.listenBrowserCommands();
+    this.listenNavi();
+  }
+
+  listenNavi() {
+    const n = this.device.inputs.a.buttons.naviTop;
+    [{
+      button: n.down,
+      action: () => {
+        this.device.displayCommand('scrollDown');
+      },
+    }, {
+      button: n.up,
+      action: () => {
+        this.device.displayCommand('scrollUp');
+      },
+    }].forEach(v => {
+      v.button.listen(({up}) => {
+        if (up) {
+          return;
+        }
+        v.action();
+      });
+    });
   }
 
   initInputs(data) {
@@ -66,7 +88,7 @@ export class Integrator extends Flow {
           ?.forEach((v, i) => this.displayButtons.setButton(v, async (button, v, index) => {
             const r = await this.runFix(selectedRepos, button.text);
             if (r && r.error) {
-              console.error(r)
+              console.error(r);
             }
           }, i > 8 ? 1 : 0, i % 8));
       });

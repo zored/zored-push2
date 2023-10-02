@@ -152,11 +152,14 @@ export class InputTree {
       knobs: [],
       pads: [],
       buttons: {
-        left: {},
-        right: {},
         top: [],
         bottom: [],
-        navi: [],
+        naviTop: {
+          left: null,
+          right: null,
+          up: null,
+          down: null,
+        },
       },
     };
     this.fillInputs();
@@ -198,6 +201,12 @@ export class InputTree {
       _type: inputTypes.button,
       name: controlsNames.nameById(controller),
     }, this.notifyTouched)));
+    const directions = ['left', 'right', 'up', 'down'];
+    a.buttons.naviTop = Object.fromEntries(seq([[44, 47]]).map((controller, i) => [directions[i], (new RegularButton({
+      controller,
+      _type: inputTypes.button,
+      name: controlsNames.nameById(controller),
+    }, this.notifyTouched))]));
 
     this.index = Object.fromEntries(this.indexInputs());
     if (this.config.isDebug()) {

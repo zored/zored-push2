@@ -63,7 +63,7 @@ export class Device {
   }
 
   async displayCommand(id, data) {
-    await this.display.html.sendCommand(id, data);
+    await this.display.browser.sendCommand(id, data);
   }
 
   drawInput() {
@@ -111,6 +111,5 @@ export class Device {
     this.reset();
     this.display.close();
     this.push2.close();
-    process.exit();
   }
 }
