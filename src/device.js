@@ -111,5 +111,6 @@ export class Device {
     this.reset();
     this.display.close();
     this.push2.close();
+    process.exit();
   }
 }
