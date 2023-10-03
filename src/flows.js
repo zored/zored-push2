@@ -13,9 +13,9 @@ export class Flows {
     const d = this.device;
     return [
       new Simple(d),
+      new Integrator(d),
       new Colors(d, 0),
       new Colors(d, 64),
-      new Integrator(d),
     ];
   }
 

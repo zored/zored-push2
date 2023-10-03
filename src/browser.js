@@ -1,6 +1,7 @@
 import fs from 'fs';
 import {Cluster} from 'puppeteer-cluster';
 import {Image} from 'canvas';
+import EventEmitter from 'events';
 
 export class Browser {
   constructor(config) {
@@ -10,6 +11,7 @@ export class Browser {
     this.running = true;
     this.page = null;
     this.url = null;
+    this.events = new EventEmitter();
   }
 
   async goto(url) {
@@ -136,9 +138,21 @@ export class Browser {
   }
 
   async listenCommands() {
-    await this.page.exposeFunction('zoredPush2Call', (id, data) => {
-      console.log({id, data, msg: 'call to zoredPush2Call'});
-    })
+    try {
+      await this.page.exposeFunction('zoredPush2Call', (id, data) => {
+        this.events.emit('command', {
+          id,
+          data,
+        });
+        if (this.config.isDebug()) {
+          fs.writeFileSync(
+            `debug_${id}.json`,
+            JSON.stringify(data, null, 2),
+          );
+        }
+      });
+    } catch (e) {
+    }
   }
 
   async sendCommand(id, data) {

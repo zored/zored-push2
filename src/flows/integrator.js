@@ -14,6 +14,21 @@ export class Integrator extends Flow {
     };
     this.selected = {};
     this.displayButtons = null;
+    this.inputsInited = false;
+  }
+
+  async init() {
+    await super.init();
+    await this.device.display.browser.events.on('command', ({
+                                                              id,
+                                                              data,
+                                                            }) => {
+      switch (id) {
+        case 'expose-all':
+          this.initInputs(data);
+          break;
+      }
+    });
   }
 
   async start() {
@@ -21,7 +36,9 @@ export class Integrator extends Flow {
     if (!this.running) {
       return;
     }
+
     await this.device.display.listenBrowserCommands();
+
     this.listenNavi();
   }
 
@@ -48,13 +65,17 @@ export class Integrator extends Flow {
   }
 
   initInputs(data) {
+    if (this.inputsInited) {
+      return;
+    }
+    this.inputsInited = true;
     this.device.inputs.a.pads.forEach((v, i) => {
       const
         repo = data.Repos[i],
         name = repo.Repo.Name,
         buttonColorName = this.priorityPurposeColors[repo.Repo.Purpose],
         colors = this.device.inputs.colors,
-        active = repo.Git.Reference === data.Branch || repo.Repo.Name === 'integrator',
+        active = repo.Git.Reference === data.branch || repo.Repo.Name === 'integrator',
         buttonColor = colors[buttonColorName + (active ? '' : 'Dark')],
         clickedColor = colors.blue;
 
@@ -76,22 +97,29 @@ export class Integrator extends Flow {
         v.setColor(buttonColor);
 
         // change active display buttons:
-        this.displayButtons.reset();
+        // this.displayButtons.reset();
         const selectedRepos = Object.keys(this.selected);
-        this.device.displayCommand('intro', {text: selectedRepos.map(v => v.replace('-service', '')).join(' + ')}).then();
+        // this.device.displayCommand('intro', {text: selectedRepos.map(v => v.replace('-service', '')).join(' + ')}).then();
         const fixes = selectedRepos.map(v => data.Fixes[v]);
         if (!fixes.length) {
           return;
         }
-        fixes.reduce((a, b) => (a || []).filter(c => (b || []).includes(c || [])))
-          ?.slice(0, 16)
-          ?.forEach((v, i) => this.displayButtons.setButton(v, async (button, v, index) => {
-            const r = await this.runFix(selectedRepos, button.text);
-            if (r && r.error) {
-              console.error(r);
-            }
-          }, i > 8 ? 1 : 0, i % 8));
+        // fixes.reduce((a, b) => (a || []).filter(c => (b || []).includes(c || [])))
+        //   ?.slice(0, 16)
+        //   ?.forEach((v, i) => this.displayButtons.setButton(v, async (button, v, index) => {
+        //     const r = await this.runFix(selectedRepos, button.text);
+        //     if (r && r.error) {
+        //       console.error(r);
+        //     }
+        //   }, i > 8 ? 1 : 0, i % 8));
       });
+    });
+  }
+
+  async runFix(repos, text) {
+    console.log({
+      repos,
+      text,
     });
   }
 
@@ -106,7 +134,8 @@ export class Integrator extends Flow {
           Git: {Reference: 'master'},
         },
       ],
-      Branch: 'master',
+      Fixes: {'core': ['go.mod tidy']},
+      branch: 'master',
     };
   }
 }
