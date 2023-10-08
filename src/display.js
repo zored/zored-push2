@@ -26,7 +26,7 @@ export class Display {
     this.ctx = this.canvas.getContext('2d');
     this.browser = new Browser(this.config);
     this.startDrawLoop();
-    this.browser.start(this.canvas).then();
+    await this.browser.start(this.canvas);
   }
 
   close() {

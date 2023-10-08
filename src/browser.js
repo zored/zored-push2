@@ -81,11 +81,16 @@ export class Browser {
         ],
       },
     });
+    this.startScreenshotLoop(canvas);
+    await EventEmitter.once(this.events, 'first-draw');
+  }
+
+  startScreenshotLoop(canvas) {
     this.text = 'loading page...';
-    await this.cluster.execute({}, async ({
-                                            page,
-                                            data,
-                                          }) => {
+    this.cluster.execute({}, async ({
+                                      page,
+                                      data,
+                                    }) => {
       this.page = page;
       page.setDefaultTimeout(0);
       page.setDefaultNavigationTimeout(0);
@@ -117,7 +122,7 @@ export class Browser {
           }
         }
       }
-    });
+    }).then();
   }
 
   async gotoDefault() {
@@ -182,6 +187,10 @@ export class Browser {
   draw(ctx, canvas) {
     if (this.image) {
       ctx.drawImage(this.image, 0, 0, canvas.width, canvas.height);
+      if (this.text) {
+        this.text = null;
+        this.events.emit('first-draw');
+      }
       return;
     }
     // write loading in middle of canvas:

@@ -62,6 +62,19 @@ export class Integrator extends Flow {
         v.action();
       });
     });
+    this.device.inputs.a.knobs[1].listen(async ({up}) => {
+      await this.device.displayCommand(up ? 'scrollDown' : 'scrollUp', {value: 4});
+    });
+    this.device.inputs.a.knobs[2].listen(async ({up}) => {
+      const k = this.device.display.browser.page.keyboard;
+      if (up) {
+        await k.press('Tab');
+        return;
+      }
+      await k.down('ShiftLeft');
+      await k.press('Tab');
+      await k.up('ShiftLeft');
+    });
   }
 
   initInputs(data) {

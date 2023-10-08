@@ -1,6 +1,10 @@
 <html>
 <head>
     <style>
+        [v-cloak] {
+            display: none;
+        }
+
         html {
             background-color: #333;
             overflow: hidden;
@@ -116,7 +120,7 @@
     <link href='https://fonts.googleapis.com/css?family=Roboto Condensed' rel='stylesheet'>
 </head>
 <body>
-<div id="app">
+<div id="app" v-cloak>
     <div class="displayButtons" :class="{
       inactive: !row.active,
         row1: row.n === 1,
