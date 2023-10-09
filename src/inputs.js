@@ -51,6 +51,10 @@ export class Input {
     this.listeners.forEach(f => f(v));
   }
 
+  modifyEvent(v) {
+    return v;
+  }
+
   key() {
     return indexKey(this.v);
   }
@@ -61,9 +65,9 @@ export class Knob extends Input {
     super(v);
   }
 
-  trigger(v) {
+  modifyEvent(v) {
     v.up = v.parent.value === 1;
-    super.trigger(v);
+    return v
   }
 }
 
@@ -98,9 +102,9 @@ export class RegularButton extends Button {
     this.controller = v.controller;
   }
 
-  trigger(v) {
+  modifyEvent(v) {
     v.up = v.parent.value === 0;
-    super.trigger(v);
+    return v
   }
 
   displayButtonIndex() {
@@ -124,10 +128,10 @@ export class Pad extends Button {
     }
   }
 
-  trigger(v) {
+  modifyEvent(v) {
     v.up = v.parent._type === events.noteUp;
     v.velocity = v.parent.velocity;
-    super.trigger(v);
+    return v
   }
 }
 
@@ -162,11 +166,16 @@ export class InputTree {
         },
       },
     };
+    this.listeners = [];
     this.fillInputs();
   }
 
   byName(name) {
     return this.index[name];
+  }
+
+  addListener(f) {
+    this.listeners.push(f);
   }
 
   fillInputs() {
@@ -229,9 +238,12 @@ export class InputTree {
     if (v._type === events.aftertouch) {
       return;
     }
-    const data = {parent: v};
-    const foundInput = this.findInput(v);
-    foundInput?.trigger?.(data);
+    let data = {parent: v};
+    const input = this.findInput(v);
+    data = input?.modifyEvent(data) ?? data;
+    input?.trigger?.(data);
+    data.input = input;
+    this.listeners.forEach(f => f(data));
     if (this.config.isDebug()) {
       console.log({data});
     }
@@ -242,6 +254,7 @@ export class InputTree {
   }
 
   clear() {
+    this.listeners = [];
     Object.values(this.index).forEach(v => {
       v.listeners = [];
       if (v instanceof Button) {
