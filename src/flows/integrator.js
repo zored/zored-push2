@@ -39,7 +39,6 @@ export class Integrator extends Flow {
 
     await this.device.display.listenBrowserCommands();
     this.device.inputs.addListener(v => {
-      console.log('it works')
       this.device.displayCommand('input', v);
     });
     this.listenNavi();
